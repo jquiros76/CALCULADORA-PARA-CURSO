@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora de Precios</title>
+
+  <!-- ============================================================
+       FUENTE: Importamos DM Sans desde Google Fonts
+       (es la única dependencia externa — solo tipografía)
+  ============================================================ -->
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- ============================================================
+       CSS — Todo el estilo de la aplicación
+  ============================================================ -->
+  <style>
+    /* ── Variables globales de color y tamaño ─────────────────── */
+    :root {
+      --bg:        #F0EDE8;          /* fondo de página: beige suave */
+      --card:      #FFFFFF;          /* fondo de la tarjeta */
+      --accent:    #1A1A2E;          /* color principal oscuro */
+      --green:     #2D6A4F;          /* color de ganancia / éxito */
+      --green-lt:  #D8F3DC;          /* fondo suave del resultado */
+      --muted:     #8A8A99;          /* texto secundario */
+      --border:    #E4E0D8;          /* bordes */
+      --error:     #C0392B;          /* color de error */
+      --shadow:    0 8px 32px rgba(0,0,0,0.08);
+      --radius:    16px;
+    }
+
+    /* ── Reset y base ─────────────────────────────────────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    /* ── Tarjeta principal ────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      width: 100%;
+      max-width: 420px;
+      padding: 40px 36px 36px;
+      border: 1px solid var(--border);
+    }
+
+    /* ── Encabezado ───────────────────────────────────────────── */
+    .header {
+      margin-bottom: 32px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--bg);
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1.2;
+    }
+
+    h1 span {
+      color: var(--green);
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    /* ── Grupos de campos ─────────────────────────────────────── */
+    .field-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 8px;
+      letter-spacing: 0.01em;
+    }
+
+    /* Contenedor del input con símbolo a la izquierda */
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-prefix {
+      position: absolute;
+      left: 14px;
+      font-size: 16px;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      pointer-events: none; /* no interfiere con el clic */
+      user-select: none;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 14px 14px 14px 36px;
+      font-family: 'DM Mono', monospace;
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--accent);
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      /* Ocultar flechas nativas del input number */
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+    }
+
+    /* Efecto al hacer clic en el input */
+    input[type="number"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(26,26,46,0.06);
+      background: #fff;
+    }
+
+    /* Estado de error en el input */
+    input.error {
+      border-color: var(--error);
+      background: #fff5f5;
+    }
+
+    /* Mensaje de error debajo del input */
+    .error-msg {
+      font-size: 12px;
+      color: var(--error);
+      margin-top: 5px;
+      display: none; /* oculto por defecto */
+    }
+    .error-msg.visible {
+      display: block; /* se muestra cuando tiene la clase .visible */
+    }
+
+    /* ── Botón calcular ───────────────────────────────────────── */
+    .btn-calc {
+      width: 100%;
+      padding: 16px;
+      margin-top: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      background: var(--accent);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
+    }
+
+    .btn-calc:hover {
+      background: #2a2a45;
+      box-shadow: 0 6px 20px rgba(26,26,46,0.20);
+      transform: translateY(-1px);
+    }
+
+    .btn-calc:active {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
+    /* ── Sección de resultados ────────────────────────────────── */
+    .results {
+      margin-top: 28px;
+      display: none; /* oculto hasta calcular */
+    }
+
+    /* Línea divisoria */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin-bottom: 20px;
+    }
+
+    .result-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    /* Tarjeta del precio de venta */
+    .result-price {
+      background: var(--accent);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+
+    .result-price .result-label {
+      color: rgba(255,255,255,0.6);
+    }
+
+    .result-price .amount {
+      font-family: 'DM Mono', monospace;
+      font-size: 34px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+
+    /* Tarjeta de la ganancia */
+    .result-profit {
+      background: var(--green-lt);
+      border-radius: 12px;
+      padding: 18px 20px;
+    }
+
+    .result-profit .result-label {
+      color: var(--green);
+    }
+
+    .result-profit .amount {
+      font-family: 'DM Mono', monospace;
+      font-size: 28px;
+      font-weight: 500;
+      color: var(--green);
+      letter-spacing: -0.02em;
+    }
+
+    /* Pequeño icono de flecha hacia arriba para la ganancia */
+    .result-profit .amount::before {
+      content: "↑ ";
+      font-size: 20px;
+    }
+
+    /* Nota al pie */
+    .note {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 16px;
+      text-align: center;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ============================================================
+       HTML — Estructura visible de la página
+  ============================================================ -->
+
+  <div class="card">
+
+    <!-- Encabezado de la tarjeta -->
+    <div class="header">
+      <span class="badge">Herramienta gratuita</span>
+      <h1>Calcula tu <span>precio</span> ideal</h1>
+      <p class="subtitle">Ingresa el costo y tu margen deseado para saber cuánto cobrar.</p>
+    </div>
+
+    <!-- Campo 1: Costo del producto -->
+    <div class="field-group">
+      <label for="costo">Costo del producto</label>
+      <div class="input-wrap">
+        <span class="input-prefix">$</span>
+        <input
+          type="number"
+          id="costo"
+          placeholder="0.00"
+          min="0"
+          step="0.01"
+        />
+      </div>
+      <!-- Mensaje de error (oculto por defecto) -->
+      <p class="error-msg" id="error-costo">Por favor ingresa el costo del producto.</p>
+    </div>
+
+    <!-- Campo 2: Porcentaje de ganancia -->
+    <div class="field-group">
+      <label for="margen">Porcentaje de ganancia</label>
+      <div class="input-wrap">
+        <span class="input-prefix">%</span>
+        <input
+          type="number"
+          id="margen"
+          placeholder="30"
+          min="0"
+          max="9999"
+          step="1"
+        />
+      </div>
+      <p class="error-msg" id="error-margen">Por favor ingresa el porcentaje de ganancia.</p>
+    </div>
+
+    <!-- Botón de cálculo -->
+    <button class="btn-calc" onclick="calcular()">
+      Calcular precio →
+    </button>
+
+    <!-- Sección de resultados (oculta hasta calcular) -->
+    <div class="results" id="resultados">
+      <div class="divider"></div>
+
+      <!-- Precio de venta sugerido -->
+      <div class="result-price">
+        <p class="result-label">Precio de venta sugerido</p>
+        <p class="amount" id="precio-venta">$0.00</p>
+      </div>
+
+      <!-- Ganancia en dinero -->
+      <div class="result-profit">
+        <p class="result-label">Tu ganancia</p>
+        <p class="amount" id="ganancia">$0.00</p>
+      </div>
+
+      <!-- Nota informativa -->
+      <p class="note">
+        Resultado basado en un margen sobre el costo.<br>
+        Ajusta según impuestos o gastos adicionales.
+      </p>
+    </div>
+
+  </div><!-- /card -->
+
+
+  <!-- ============================================================
+       JAVASCRIPT — Lógica de la calculadora
+  ============================================================ -->
+  <script>
+
+    // ── Función principal: se llama al hacer clic en el botón ──
+    function calcular() {
+
+      // 1. Leer los valores que el usuario escribió
+      const costoStr  = document.getElementById('costo').value;
+      const margenStr = document.getElementById('margen').value;
+
+      // 2. Limpiar errores anteriores
+      limpiarErrores();
+
+      // 3. Validar que los campos no estén vacíos ni sean negativos
+      let hayError = false;
+
+      if (costoStr === '' || Number(costoStr) < 0) {
+        mostrarError('costo', 'error-costo');
+        hayError = true;
+      }
+
+      if (margenStr === '' || Number(margenStr) < 0) {
+        mostrarError('margen', 'error-margen');
+        hayError = true;
+      }
+
+      // Si hay errores, detenemos la función aquí
+      if (hayError) return;
+
+      // 4. Convertir los textos a números decimales
+      const costo  = parseFloat(costoStr);
+      const margen = parseFloat(margenStr);
+
+      // 5. Fórmulas del cálculo
+      //    Ganancia en dinero  = Costo × (% / 100)
+      //    Precio de venta     = Costo + Ganancia
+      const ganancia     = costo * (margen / 100);
+      const precioVenta  = costo + ganancia;
+
+      // 6. Mostrar los resultados en pantalla
+      //    toFixed(2) redondea a 2 decimales, ej: 12.5 → "12.50"
+      document.getElementById('precio-venta').textContent = '$' + precioVenta.toFixed(2);
+      document.getElementById('ganancia').textContent     = '$' + ganancia.toFixed(2);
+
+      // 7. Hacer visible la sección de resultados
+      document.getElementById('resultados').style.display = 'block';
+
+      // 8. Pequeña animación: hacer scroll hasta los resultados
+      document.getElementById('resultados').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+
+    // ── Función auxiliar: marca un input como error ─────────────
+    function mostrarError(inputId, errorId) {
+      document.getElementById(inputId).classList.add('error');
+      document.getElementById(errorId).classList.add('visible');
+    }
+
+
+    // ── Función auxiliar: limpia todos los estados de error ─────
+    function limpiarErrores() {
+      // Quitamos la clase 'error' de los inputs
+      document.getElementById('costo').classList.remove('error');
+      document.getElementById('margen').classList.remove('error');
+
+      // Ocultamos los mensajes de error
+      document.getElementById('error-costo').classList.remove('visible');
+      document.getElementById('error-margen').classList.remove('visible');
+    }
+
+
+    // ── Escuchar la tecla Enter en cualquier input ───────────────
+    // Así el usuario puede presionar Enter en vez de hacer clic
+    document.querySelectorAll('input').forEach(function(input) {
+      input.addEventListener('keydown', function(evento) {
+        if (evento.key === 'Enter') calcular();
+      });
+    });
+
+  </script>
+
+
+  <!--
+  ================================================================
+  CÓMO FUNCIONA ESTE CÓDIGO — Guía para principiantes
+  ================================================================
+
+  ESTRUCTURA GENERAL
+  ─────────────────
+  El archivo tiene 3 partes dentro de una sola página HTML:
+    1. <head>   → Configuración, fuentes y todo el CSS (estilo)
+    2. <body>   → El HTML (los elementos visibles)
+    3. <script> → El JavaScript (la lógica y los cálculos)
+
+  LA FÓRMULA
+  ──────────
+  Precio de venta = Costo + (Costo × Margen%)
+  Ejemplo: Costo $100, margen 30%
+    → Ganancia = 100 × 0.30 = $30
+    → Precio   = 100 + 30   = $130
+
+  FLUJO DE JAVASCRIPT
+  ────────────────────
+  1. El usuario hace clic en "Calcular" → se llama calcular()
+  2. Se leen los valores de los <input> con .value
+  3. Se valida que no estén vacíos (si lo están, se muestra error)
+  4. Se convierten a números con parseFloat()
+  5. Se aplica la fórmula
+  6. Se actualiza el texto del resultado con .textContent
+  7. Se muestra la sección oculta con style.display = 'block'
+
+  CSS IMPORTANTE
+  ──────────────
+  - display: none  → oculta un elemento completamente
+  - display: block → lo hace visible
+  - Las clases .error y .visible se agregan/quitan con JavaScript
+    para mostrar mensajes de error sin recargar la página
+  ================================================================
+  -->
+
+</body>
+</html>
